@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import Filter from './components/Filter'
 import PersonForm from './components/PersonForm'
 import Persons from './components/Persons'
-import axios from 'axios'
 import personService from './services/persons'
 
 const App = () => {
@@ -10,6 +9,8 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [newFilter, setNewFilter] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const hook = () => {
     personService
@@ -48,7 +49,13 @@ const App = () => {
             setPersons(persons.map(person => person.id !== updatedPerson.id ? person : updatedPerson))
             setNewName('')
             setNewNumber('')
+
+            setSuccessMessage(`Added '${newName}'`)
+            setTimeout(() => {
+              setSuccessMessage(null)
+            }, 5000)
           })
+
       }
     } else {
       const newPerson = { name: newName, number: newNumber, id: (persons.length + 1).toString() }
@@ -59,16 +66,35 @@ const App = () => {
             setPersons(persons.concat(response.data))
             setNewName('')
             setNewNumber('')
+
+            setSuccessMessage(`Added '${newName}'`)
+            setTimeout(() => {
+              setSuccessMessage(null)
+            }, 5000)
         })
+        .catch(error => {
+          setErrorMessage(`Failed to add '${newName}'. Try again later.`)
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
+        })        
     }
   }
 
   const handleDelete = (id) => {
-    if (window.confirm("Do you really want to delete this person?")) {
+    const person = persons.find(p => p.id === id)
+  
+    if (window.confirm(`Do you really want to delete ${person.name}?`)) {
       personService
         .deletePerson(id)
         .then(() => {
-          setPersons(prevPersons => prevPersons.filter(person => person.id !== id))
+          setPersons(prevPersons => prevPersons.filter(p => p.id !== id))
+        })
+        .catch(error => {
+          setErrorMessage(`Information of '${person.name}' has already been removed from the server`)
+          setTimeout(() => {
+            setErrorMessage(null)
+          }, 5000)
         })
     }
   }
@@ -81,6 +107,9 @@ const App = () => {
     <div>
       <h2>Phonebook</h2>
 
+      {successMessage && <div className="success">{successMessage}</div>}
+      {errorMessage && <div className="error">{errorMessage}</div>}
+
       <Filter value={newFilter} onChange={handleFilterChange} />
 
       <h3>Add a new</h3>
@@ -92,6 +121,8 @@ const App = () => {
         number={newNumber}
         onNumberChange={handleNumberChange}
       />
+
+
 
       <h3>Numbers</h3>
 
